@@ -1,8 +1,14 @@
-
 import pyautogui
 
 # Get screen dimensions dynamically
 SCREEN_WIDTH, SCREEN_HEIGHT = pyautogui.size()
+
+# --- General Settings ---
+# Set to True to print debug information to the console
+DEBUG = True
+# Set to True to draw hand landmarks on the camera frame
+DRAW_LANDMARKS = True
+
 
 # --- Camera and Frame Settings ---
 # Set the resolution of the camera capture
@@ -20,6 +26,8 @@ TRACKING_CONFIDENCE = 0.7
 # Smoothing factor for the hand landmarks. Higher values mean more smoothing
 # but also more latency. (0.0 - 1.0)
 LANDMARK_SMOOTHING_FACTOR = 0.6
+# Which landmark to use for cursor control (8 = Index Finger Tip)
+CURSOR_LANDMARK = 8
 
 
 # --- System Control Settings ---
@@ -49,3 +57,5 @@ DEBOUNCE_TIME = 10
 DEBOUNCE_TIME_SHORT = 5
 # Longer debounce for actions that should not be rapidly repeated.
 DEBOUNCE_TIME_LONG = 15
+file_path:
+d:\Motion Control System\config.py
