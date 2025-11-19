@@ -1,4 +1,3 @@
-
 import numpy as np
 from utils import calculate_distance
 
@@ -217,3 +216,15 @@ if __name__ == '__main__':
     mock_hand_data_open = [{'landmarks': mock_landmarks_open, 'handedness': 'Right'}]
     gesture = recognizer.recognize(mock_hand_data_open)
     print(f"Recognized Gesture (Open Hand): {gesture}") # Expected: CURSOR_MOVE
+new_string:
+        num_fingers_up = sum(finger_states)
+
+        # Calculate relevant distances
+        index_thumb_dist = calculate_distance(landmarks[4], landmarks[8])
+        middle_thumb_dist = calculate_distance(landmarks[4], landmarks[12])
+old_string:
+        num_fingers_up = sum(finger_states)
+
+        # Calculate relevant distances
+        index_thumb_dist = self._calculate_distance(landmarks[4], landmarks[8])
+        middle_thumb_dist = self._calculate_distance(landmarks[4], landmarks[12])
