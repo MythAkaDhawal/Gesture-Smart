@@ -1,77 +1,197 @@
-import cv2
-import config
-from hand_tracking import HandTracker
-from gesture_recognizer import GestureRecognizer
-from system_control import SystemController
-from utils import FPS
+import pyautogui
+import platform
+import time
 
-def main():
+class SystemController:
     """
-    The main function to run the hand gesture control system.
+    Maps recognized gestures to system actions using pyautogui.
+    Handles mouse movement, clicks, scrolling, and keyboard shortcuts.
     """
-    # --- Initialization ---
-    DEBUG = True  # Set to True to print debug information
+    def __init__(self, config):
+        """
+        Initializes the SystemController.
 
-    # Initialize utilities and modules
-    fps_counter = FPS()
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("Error: Could not open camera.")
-        return
-
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.CAM_WIDTH)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.CAM_HEIGHT)
-
-    tracker = HandTracker(
-        max_hands=config.MAX_HANDS,
-        detection_con=config.DETECTION_CONFIDENCE,
-        track_con=config.TRACKING_CONFIDENCE,
-        smoothing_factor=config.LANDMARK_SMOOTHING_FACTOR
-    )
-    recognizer = GestureRecognizer(config)
-    controller = SystemController(config)
-
-    print("Hand Gesture Control System activated. Press 'q' to quit.")
-
-    # --- Main Loop ---
-    while True:
-        success, frame = cap.read()
-        if not success:
-            print("Warning: Could not read frame from camera. Skipping.")
-            continue
-
-        # Flip the frame horizontally for a more intuitive mirror-like view
-        frame = cv2.flip(frame, 1)
-
-        # 1. Find and process hands
-        frame, hands_data = tracker.find_hands(frame)
-
-        # 2. Recognize gesture
-        gesture = recognizer.recognize(hands_data)
+        Args:
+            config: A configuration object with control parameters.
+        """
+        self.config = config
+        self.screen_width, self.screen_height = pyautogui.size()
         
-        if DEBUG and gesture != "NONE":
-            print(f"Gesture: {gesture}")
+        # Disable pyautogui pause for real-time control
+        pyautogui.PAUSE = 0
+        pyautogui.FAILSAFE = False
 
-        # 3. Handle gesture with system controller
-        controller.handle_gesture(gesture, hands_data, frame.shape)
+        # For mouse movement smoothing
+        self.prev_x, self.prev_y = self.screen_width / 2, self.screen_height / 2
 
-        # 4. Update and display FPS
-        fps_counter.update()
-        fps_counter.display_fps(frame)
+    def _map_coordinates(self, x, y, frame_width, frame_height):
+        """
+        Maps hand coordinates from the camera frame to screen coordinates.
+        Includes a margin to prevent hitting screen edges unintentionally.
+        """
+        # Invert x-axis because the camera image is flipped
+        x = frame_width - x
 
-        # 5. Display the frame
-        cv2.imshow("Gesture Control", frame)
+        # Apply margin
+        x = max(self.config.FRAME_MARGIN, min(frame_width - self.config.FRAME_MARGIN, x))
+        y = max(self.config.FRAME_MARGIN, min(frame_height - self.config.FRAME_MARGIN, y))
 
-        # Exit condition
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        # Map to screen coordinates
+        screen_x = (x - self.config.FRAME_MARGIN) * self.screen_width / (frame_width - 2 * self.config.FRAME_MARGIN)
+        screen_y = (y - self.config.FRAME_MARGIN) * self.screen_height / (frame_height - 2 * self.config.FRAME_MARGIN)
 
-    # --- Cleanup ---
-    cap.release()
-    cv2.destroyAllWindows()
-    print("System deactivated.")
+        return screen_x, screen_y
+
+    def move_mouse(self, x, y, frame_width, frame_height):
+        """
+        Moves the mouse to the specified coordinates with smoothing.
+
+        Args:
+            x (float): The x-coordinate from the hand landmark.
+            y (float): The y-coordinate from the hand landmark.
+            frame_width (int): The width of the camera frame.
+            frame_height (int): The height of the camera frame.
+        """
+        target_x, target_y = self._map_coordinates(x, y, frame_width, frame_height)
+
+        # Apply exponential moving average for smoothing
+        smooth_x = self.config.CURSOR_SMOOTHING * self.prev_x + (1 - self.config.CURSOR_SMOOTHING) * target_x
+        smooth_y = self.config.CURSOR_SMOOTHING * self.prev_y + (1 - self.config.CURSOR_SMOOTHING) * target_y
+
+        pyautogui.moveTo(smooth_x, smooth_y)
+        self.prev_x, self.prev_y = smooth_x, smooth_y
+
+    def left_click(self):
+        pyautogui.click(button='left')
+
+    def right_click(self):
+        pyautogui.click(button='right')
+
+    def start_drag(self):
+        pyautogui.mouseDown(button='left')
+
+    def release_hold(self):
+        pyautogui.mouseUp(button='left')
+
+    def scroll(self, direction):
+        amount = self.config.SCROLL_SPEED
+        if direction == 'UP':
+            pyautogui.scroll(amount)
+        elif direction == 'DOWN':
+            pyautogui.scroll(-amount)
+
+    def zoom(self, direction):
+        """
+        Zooms in or out by scrolling with the Ctrl key held down.
+        This is a more universal zoom method than Ctrl + '+/-'.
+        """
+        modifier = 'command' if platform.system() == "Darwin" else 'ctrl'
+        
+        pyautogui.keyDown(modifier)
+        if direction == 'IN':
+            pyautogui.scroll(1)
+        elif direction == 'OUT':
+            pyautogui.scroll(-1)
+        pyautogui.keyUp(modifier)
+
+    def switch_tabs(self, direction):
+        if direction == 'NEXT':
+            pyautogui.hotkey('ctrl', 'tab')
+        elif direction == 'PREV':
+            pyautogui.hotkey('ctrl', 'shift', 'tab')
+
+    def switch_desktops(self, direction):
+        if platform.system() == "Windows":
+            if direction == 'LEFT':
+                pyautogui.hotkey('win', 'ctrl', 'left')
+            elif direction == 'RIGHT':
+                pyautogui.hotkey('win', 'ctrl', 'right')
+        # macOS desktop switching can be more complex (e.g., 'ctrl', 'left'/'right')
+        # and often needs to be enabled in System Preferences.
+        elif platform.system() == "Darwin":
+            if direction == 'LEFT':
+                pyautogui.hotkey('ctrl', 'left')
+            elif direction == 'RIGHT':
+                pyautogui.hotkey('ctrl', 'right')
+
+    def handle_gesture(self, gesture, hands_data, frame_shape):
+        """
+        Dispatches the recognized gesture to the appropriate system action.
+
+        Args:
+            gesture (str or dict): The gesture event from GestureRecognizer.
+            hands_data (list): The list of hand data from HandTracker.
+            frame_shape (tuple): The (height, width) of the camera frame.
+        """
+        frame_height, frame_width, _ = frame_shape
+
+        if gesture in ["CURSOR_MOVE", "DRAG_HOLD"]:
+            if hands_data:
+                landmark_pos = hands_data[0]['landmarks'][self.config.CURSOR_LANDMARK]
+                self.move_mouse(landmark_pos[0], landmark_pos[1], frame_width, frame_height)
+        elif gesture == "LEFT_CLICK":
+            self.left_click()
+        elif gesture == "RIGHT_CLICK":
+            self.right_click()
+        elif gesture == "START_DRAG":
+            self.start_drag()
+        elif gesture == "RELEASE_HOLD":
+            self.release_hold()
+        elif isinstance(gesture, dict) and gesture.get('gesture') == 'SCROLL':
+            self.scroll(gesture['direction'])
+        elif gesture in ["ZOOM_IN", "ZOOM_OUT"]:
+            self.zoom(gesture.split('_')[1])
+        elif isinstance(gesture, dict) and gesture.get('gesture') == 'SWITCH_TABS':
+            self.switch_tabs(gesture['direction'])
+        elif isinstance(gesture, dict) and gesture.get('gesture') == 'SWITCH_DESKTOPS':
+            self.switch_desktops(gesture['direction'])
+        elif gesture != "NONE":
+            # Fallback for any other unhandled gestures
+            pass
+
 
 if __name__ == '__main__':
-    main()
+    # This is a placeholder for a config object for testing
+    class MockConfig:
+        CURSOR_SMOOTHING = 0.7
+        FRAME_MARGIN = 100
+        SCROLL_SPEED = 20
+
+    controller = SystemController(config=MockConfig())
+
+    print("Testing SystemController. Move your mouse to see the script take over.")
+    print("Testing mouse movement for 3 seconds...")
+    
+    # Mock frame dimensions
+    frame_w, frame_h = 640, 480
+    
+    # Simulate moving mouse in a square
+    start_time = time.time()
+    while time.time() - start_time < 3:
+        controller.move_mouse(200, 200, frame_w, frame_h) # Top-left
+        time.sleep(0.1)
+        controller.move_mouse(440, 200, frame_w, frame_h) # Top-right
+        time.sleep(0.1)
+        controller.move_mouse(440, 280, frame_w, frame_h) # Bottom-right
+        time.sleep(0.1)
+        controller.move_mouse(200, 280, frame_w, frame_h) # Bottom-left
+        time.sleep(0.1)
+
+    print("\nTesting click...")
+    controller.left_click()
+    print("A left click was performed.")
+    time.sleep(1)
+
+    print("\nTesting scroll...")
+    controller.scroll('UP')
+    print("Scrolled up.")
+    time.sleep(1)
+
+    print("\nTesting zoom...")
+    controller.zoom('IN')
+    print("Zoomed in (Ctrl+).")
+    time.sleep(1)
+
+    print("\nTest complete.")
 file_path:
-d:\Motion Control System\main.py
+d:\Motion Control System\system_control.py
