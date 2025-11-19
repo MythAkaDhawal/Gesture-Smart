@@ -8,7 +8,7 @@ class HandTracker:
     A class to track hands using MediaPipe and apply smoothing.
     """
     def __init__(self, static_image_mode=False, max_hands=2, model_complexity=1, 
-                 min_detection_confidence=0.7, min_tracking_confidence=0.7, smoothing_factor=0.5):
+                 detection_con=0.7, track_con=0.7, smoothing_factor=0.5):
         """
         Initializes the HandTracker.
 
@@ -29,8 +29,8 @@ class HandTracker:
             static_image_mode=static_image_mode,
             max_num_hands=max_hands,
             model_complexity=model_complexity,
-            min_detection_confidence=min_detection_confidence,
-            min_tracking_confidence=min_tracking_confidence
+            min_detection_confidence=detection_con,
+            min_tracking_confidence=track_con
         )
         self.mp_draw = mp.solutions.drawing_utils
         self.smoothing_factor = smoothing_factor
@@ -69,12 +69,12 @@ class HandTracker:
                 self.previous_landmarks[i] = hand_landmarks
 
                 # Get landmark coordinates and bounding box
-                lm_list = []
+                landmarks = []
                 x_list = []
                 y_list = []
                 for lm in hand_landmarks.landmark:
                     px, py = int(lm.x * w), int(lm.y * h)
-                    lm_list.append([px, py, lm.z])
+                    landmarks.append([px, py, lm.z])
                     x_list.append(px)
                     y_list.append(py)
                 
@@ -86,7 +86,7 @@ class HandTracker:
                 handedness = self.results.multi_handedness[i].classification[0].label
 
                 hand_info = {
-                    'lm_list': lm_list,
+                    'landmarks': landmarks,
                     'bbox': bbox,
                     'handedness': handedness
                 }
