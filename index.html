@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Gesture PC Control — Project Launcher</title>
+<style>
+  :root{
+    --bg1:#05060a;
+    --bg2:#0f1724;
+    --accent:#6c9cff;
+    --accent-2:#7ef6c5;
+    --muted:#9aa6bb;
+    --card:#0b1220;
+    --glass: rgba(255,255,255,0.04);
+  }
+  html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;}
+  body{
+    background: radial-gradient(1200px 800px at 10% 10%, rgba(108,156,255,0.06), transparent 8%),
+                radial-gradient(900px 600px at 95% 90%, rgba(126,246,197,0.03), transparent 10%),
+                linear-gradient(180deg,var(--bg1),var(--bg2));
+    color:#e6eef8;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    overflow-y:auto;
+  }
+
+  /* layout */
+  .wrap{max-width:1100px;margin:36px auto;padding:28px;}
+  header{display:flex;align-items:center;gap:18px;}
+  .logo{
+    width:72px;height:72px;border-radius:16px;
+    background:linear-gradient(135deg,var(--accent),#4f7bff);
+    display:grid;place-items:center;box-shadow:0 6px 28px rgba(22,33,79,0.6);
+    transform:translateZ(0);
+  }
+  .logo svg{width:46px;height:46px;filter:drop-shadow(0 4px 14px rgba(28,49,110,0.35));}
+  h1{margin:0;font-size:28px;letter-spacing:-0.4px;}
+  p.lead{margin:6px 0 0;font-size:14px;color:var(--muted);}
+
+  /* hero CTA */
+  .hero{display:flex;gap:24px;margin-top:22px;align-items:stretch;}
+  .left{flex:1}
+  .card{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:14px;padding:20px;border:1px solid rgba(255,255,255,0.04);
+    box-shadow:0 8px 30px rgba(3,8,18,0.5);
+  }
+  .big-title{font-size:22px;margin:0 0 8px;}
+  .muted{color:var(--muted);font-size:14px;line-height:1.5;}
+  .cta-row{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;}
+  .btn{
+    background:linear-gradient(90deg,var(--accent),#4fb0ff);
+    color:#031027;padding:10px 16px;border-radius:10px;border:0;font-weight:600;
+    cursor:pointer;box-shadow:0 6px 20px rgba(79,144,255,0.12);transition:transform .14s ease,box-shadow .14s;
+  }
+  .btn:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(79,144,255,0.14);}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent);box-shadow:none;}
+  .btn.secondary{background:linear-gradient(90deg,var(--accent-2),#4ef7d0);color:#01261b;}
+
+  /* right preview (animated device / live card) */
+  .preview{width:420px;display:flex;flex-direction:column;gap:12px;}
+  .device{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,0.03);position:relative;
+    overflow:hidden;
+  }
+  .device-screen{
+    height:260px;border-radius:8px;background:linear-gradient(180deg,#071124,#0b2238);
+    display:grid;place-items:center;color:var(--muted);position:relative;overflow:hidden;
+  }
+  .device-screen .pulse{
+    position:absolute;inset:0;pointer-events:none;background:
+      radial-gradient(circle at 20% 30%, rgba(108,156,255,0.06), transparent 6%),
+      radial-gradient(circle at 80% 80%, rgba(126,246,197,0.04), transparent 8%);
+    animation:softShift 9s linear infinite;
+  }
+  @keyframes softShift{0%{transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)}}
+
+  /* animated mock landmarks + pointer */
+  .mock-canvas{width:100%;height:100%;position:relative}
+  .dot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 6px 20px rgba(108,156,255,0.14);transform:translate(-50%,-50%);}
+  .connecting{position:absolute;height:2px;background:linear-gradient(90deg,var(--accent),#62b6ff);border-radius:2px;transform-origin:left center;}
+
+  .small{font-size:13px;color:var(--muted);}
+
+  /* features grid */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px;}
+  .feature{background:var(--card);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.02);text-align:left;}
+  .feature h4{margin:0 0 6px;font-size:15px}
+  .feature p{margin:0;color:var(--muted);font-size:13px}
+
+  /* files list */
+  .files{margin-top:18px;display:flex;flex-direction:column;gap:8px;}
+  .file{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px;border:1px solid rgba(255,255,255,0.02);}
+  .file .name{color:#cfe6ff}
+  .tag{font-size:12px;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.02);color:var(--muted)}
+
+  /* footer */
+  footer{margin-top:34px;text-align:center;color:var(--muted);font-size:13px;padding-bottom:36px}
+
+  /* modal */
+  .modal-back{position:fixed;inset:0;background:rgba(2,6,12,0.6);display:none;align-items:center;justify-content:center;z-index:60;}
+  .modal{width:720px;max-width:92%;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:22px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);}
+  .modal h3{margin:0 0 8px}
+  pre.cmd{background:#071424;padding:12px;border-radius:8px;color:#bfe8ff;overflow:auto;}
+  .close{float:right;background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:18px}
+
+  /* responsive */
+  @media (max-width:980px){
+    .hero{flex-direction:column}
+    .preview{width:100%}
+    .grid{grid-template-columns:repeat(1,1fr)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo" aria-hidden="true">
+      <!-- simple gesture-ish svg -->
+      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+        <path d="M20 40c0 6.627 5.373 12 12 12s12-5.373 12-12V16" stroke="#fff" stroke-opacity="0.9" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M28 12v8" stroke="#fff" stroke-opacity="0.9" stroke-width="2.8" stroke-linecap="round" />
+        <path d="M36 10v10" stroke="#fff" stroke-opacity="0.9" stroke-width="2.8" stroke-linecap="round" />
+      </svg>
+    </div>
+    <div>
+      <h1>Gesture PC Control<span style="color:var(--accent);"> — live</span></h1>
+      <p class="lead">Touch-free desktop control using webcam hand-tracking • OpenCV • MediaPipe • Python</p>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="left card">
+      <div class="big-title">Ultra-premium local launcher & docs</div>
+      <div class="muted small">
+        This page is a polished project front for your repository. It provides: a fast summary, animated preview, file list, and one-click instructions to run locally.
+        It is intentionally offline-friendly — no external resources, no tracking.
+      </div>
+
+      <div class="cta-row">
+        <button class="btn" id="runBtn">▶ Run Locally</button>
+        <button class="btn ghost" id="openRepoBtn">📂 View on GitHub</button>
+        <button class="btn secondary" id="downloadBtn">⬇ Download ZIP</button>
+        <button class="btn ghost" id="docsBtn">📘 Docs & Tips</button>
+      </div>
+
+      <div class="grid" style="margin-top:20px;">
+        <div class="feature">
+          <h4>🎯 Ready Features</h4>
+          <p>Cursor control, pinch click, drag/drop, scrolling, swipe navigation, zoom gestures. Stable smoothing + debouncing.</p>
+        </div>
+        <div class="feature">
+          <h4>⚡ Low CPU</h4>
+          <p>Processes at 640×480 and caps FPS to 25 — optimized overlay and minimal drawing keep CPU usage low.</p>
+        </div>
+        <div class="feature">
+          <h4>🛡 Safety</h4>
+          <p>Failsafe timeouts release mouse if hand disappears, optional corner fail-safe, and debug mode for testing.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:18px;" class="card">
+        <h4 style="margin:0 0 8px">Project files</h4>
+        <div class="files">
+          <div class="file"><span class="name">main.py</span><span class="tag">entry</span></div>
+          <div class="file"><span class="name">config.py</span><span class="tag">settings</span></div>
+          <div class="file"><span class="name">hand_tracking.py</span><span class="tag">track</span></div>
+          <div class="file"><span class="name">gesture_recognizer.py</span><span class="tag">logic</span></div>
+          <div class="file"><span class="name">system_control.py</span><span class="tag">actions</span></div>
+          <div class="file"><span class="name">overlay_renderer.py</span><span class="tag">hud</span></div>
+          <div class="file"><span class="name">utils.py</span><span class="tag">helpers</span></div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="preview">
+      <div class="card device">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-weight:700">Live Preview</div>
+          <div style="font-size:12px;color:var(--muted)">Simulated • Local</div>
+        </div>
+        <div class="device-screen" id="deviceScreen" aria-hidden="true">
+          <div class="pulse" style="opacity:0.07"></div>
+          <div class="mock-canvas" id="mockCanvas" style="width:100%;height:100%;position:relative"></div>
+          <div style="position:absolute;bottom:8px;right:12px;font-size:12px;color:var(--muted)">Overlay • FPS: <span id="fpsSim">24</span></div>
+        </div>
+      </div>
+
+      <div class="card small">
+        <strong>Quick Run</strong>
+        <p class="muted small" style="margin:8px 0 0">
+          Open terminal in project folder and run the commands below. Click "Run Locally" for copyable commands.
+        </p>
+        <pre class="cmd" id="cmdBlock" style="margin-top:10px">python -m venv venv
+# Windows:
+venv\Scripts\activate
+# macOS / Linux:
+source venv/bin/activate
+pip install -r requirements.txt
+python main.py</pre>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    <div>Made with ♥ • Local only • No external libs required for the page</div>
+  </footer>
+</div>
+
+<!-- modal -->
+<div class="modal-back" id="modal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal" role="document">
+    <button class="close" id="closeModal" title="Close">✕</button>
+    <h3>Run Locally — Quick Guide</h3>
+    <p class="muted small">Follow these exact steps. Copy to your terminal. Works on Windows / macOS / Linux.</p>
+    <pre class="cmd" id="modalCmd">
+# 1) Create & activate virtualenv
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# macOS / Linux:
+source venv/bin/activate
+
+# 2) Install dependencies
+pip install opencv-python mediapipe pyautogui numpy
+
+# 3) Run
+python main.py
+
+Notes:
+• On macOS, grant Accessibility for Terminal/VS Code to allow mouse control.
+• If using HTTPS GitHub clone, create a PAT for pushes.
+• To stop: press Q or ESC in the app window.
+    </pre>
+
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button class="btn" id="copyCmd">Copy Commands</button>
+      <button class="btn ghost" id="openDocs">Open Minimal Docs</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Small JS for interactions & pretty demo animation */
+/* Modal logic */
+const modal = document.getElementById('modal');
+document.getElementById('runBtn').addEventListener('click', ()=>{ modal.style.display='flex'; modal.setAttribute('aria-hidden','false');});
+document.getElementById('closeModal').addEventListener('click', ()=>{ modal.style.display='none'; modal.setAttribute('aria-hidden','true');});
+document.getElementById('docsBtn').addEventListener('click', ()=>{ modal.style.display='flex'; modal.setAttribute('aria-hidden','false');});
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ modal.style.display='none'; modal.setAttribute('aria-hidden','true'); }});
+/* copy commands */
+document.getElementById('copyCmd').addEventListener('click', async ()=>{
+  const txt = document.getElementById('modalCmd').innerText;
+  try{
+    await navigator.clipboard.writeText(txt);
+    document.getElementById('copyCmd').innerText='Copied!';
+    setTimeout(()=>document.getElementById('copyCmd').innerText='Copy Commands',1400);
+  }catch(e){
+    alert('Clipboard not available. Select and copy manually.');
+  }
+});
+
+/* Open GitHub search result for repository name 'gesture_pc_control' --
+   This avoids needing to set a repo URL manually; it locates likely repos. */
+document.getElementById('openRepoBtn').addEventListener('click', ()=>{
+  const q = encodeURIComponent('gesture_pc_control');
+  window.open('https://github.com/search?q='+q+'&type=repositories','_blank');
+});
+/* Download: open GitHub search (user can download from the repo page they choose) */
+document.getElementById('downloadBtn').addEventListener('click', ()=>{
+  const q = encodeURIComponent('gesture_pc_control');
+  window.open('https://github.com/search?q='+q+'&type=repositories','_blank');
+});
+
+/* Open minimal docs: opens a small info tab with tips (inline*
