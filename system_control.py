@@ -81,15 +81,18 @@ class SystemController:
             pyautogui.scroll(-amount)
 
     def zoom(self, direction):
-        if platform.system() == "Darwin": # macOS uses 'command' key
-            modifier = 'command'
-        else: # Windows/Linux use 'ctrl'
-            modifier = 'ctrl'
-            
+        """
+        Zooms in or out by scrolling with the Ctrl key held down.
+        This is a more universal zoom method than Ctrl + '+/-'.
+        """
+        modifier = 'command' if platform.system() == "Darwin" else 'ctrl'
+        
+        pyautogui.keyDown(modifier)
         if direction == 'IN':
-            pyautogui.hotkey(modifier, '+')
+            pyautogui.scroll(1)
         elif direction == 'OUT':
-            pyautogui.hotkey(modifier, '-')
+            pyautogui.scroll(-1)
+        pyautogui.keyUp(modifier)
 
     def switch_tabs(self, direction):
         if direction == 'NEXT':
@@ -122,13 +125,9 @@ class SystemController:
         """
         frame_height, frame_width, _ = frame_shape
 
-        if gesture == "NONE":
-            return
-
-        if gesture == "CURSOR_MOVE":
+        if gesture in ["CURSOR_MOVE", "DRAG_HOLD"]:
             if hands_data:
-                # Use index finger tip for cursor control
-                landmark_pos = hands_data[0]['landmarks'][8]
+                landmark_pos = hands_data[0]['landmarks'][self.config.CURSOR_LANDMARK]
                 self.move_mouse(landmark_pos[0], landmark_pos[1], frame_width, frame_height)
         elif gesture == "LEFT_CLICK":
             self.left_click()
@@ -136,11 +135,6 @@ class SystemController:
             self.right_click()
         elif gesture == "START_DRAG":
             self.start_drag()
-        elif gesture == "DRAG_HOLD":
-            # While dragging, keep updating mouse position
-            if hands_data:
-                landmark_pos = hands_data[0]['landmarks'][8]
-                self.move_mouse(landmark_pos[0], landmark_pos[1], frame_width, frame_height)
         elif gesture == "RELEASE_HOLD":
             self.release_hold()
         elif isinstance(gesture, dict) and gesture.get('gesture') == 'SCROLL':
@@ -151,6 +145,9 @@ class SystemController:
             self.switch_tabs(gesture['direction'])
         elif isinstance(gesture, dict) and gesture.get('gesture') == 'SWITCH_DESKTOPS':
             self.switch_desktops(gesture['direction'])
+        elif gesture != "NONE":
+            # Fallback for any other unhandled gestures
+            pass
 
 
 if __name__ == '__main__':
