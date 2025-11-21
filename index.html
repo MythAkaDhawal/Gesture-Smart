@@ -1,227 +1,355 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Gesture Control System</title>
-
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Gesture Control — Live Launcher</title>
 <style>
-    body {
-        margin: 0;
-        padding: 0;
-        font-family: "Poppins", sans-serif;
-        background: linear-gradient(135deg, #0d0d0d, #1a1a1a);
-        color: #fff;
-        overflow-x: hidden;
-    }
+  :root{
+    --bg1:#07080b; --bg2:#0f1722;
+    --accent:#5fb0ff; --accent-2:#6ef6c8;
+    --good:#57d27a; --warn:#ffb86b; --bad:#ff6b6b;
+    --muted:#9fb0c8;
+  }
+  html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#eaf6ff}
+  .wrap{max-width:1100px;margin:36px auto;padding:26px}
+  header{display:flex;gap:16px;align-items:center}
+  .logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#4b8dff);display:grid;place-items:center;box-shadow:0 10px 30px rgba(20,30,60,0.6)}
+  h1{margin:0;font-size:24px}
+  p.lead{margin:4px 0 0;color:var(--muted);font-size:14px}
 
-    .header {
-        text-align: center;
-        padding: 40px 20px;
-        animation: fadeDown 1s ease-out both;
-    }
+  .hero{display:flex;gap:22px;margin-top:22px;align-items:flex-start}
+  .left{flex:1}
+  .card{background:rgba(255,255,255,0.03);border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 8px 30px rgba(0,0,0,0.45)}
+  .controls{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:700;
+    background:linear-gradient(90deg,var(--accent),#4aa6ff);color:#021225;transition:transform .14s,box-shadow .14s;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent);font-weight:600}
+  .btn.warn{background:linear-gradient(90deg,var(--warn),#f6a86b);color:#08120b}
+  .btn.small{padding:8px 10px;font-size:0.95rem}
 
-    .header h1 {
-        font-size: 2.8rem;
-        font-weight: 700;
-        letter-spacing: 1px;
-        color: #00d2ff;
-        margin-bottom: 10px;
-    }
+  .panel{margin-top:16px;padding:14px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02)}
+  #statusRow{display:flex;align-items:center;gap:12px}
+  .status-pill{padding:8px 12px;border-radius:999px;font-weight:700;font-size:0.95rem}
+  .idle{background:rgba(255,255,255,0.03);color:var(--muted)}
+  .running{background:linear-gradient(90deg,#bff0d1,#57d27a);color:#04250f}
+  .stopped{background:linear-gradient(90deg,#ffd6d6,#ff8f8f);color:#3a0808}
 
-    .header p {
-        font-size: 1.1rem;
-        opacity: 0.8;
-    }
+  #log{margin-top:12px;height:160px;overflow:auto;border-radius:8px;padding:10px;background:rgba(0,0,0,0.25);font-family:ui-monospace,monospace,monospace;font-size:13px;color:#dff6ff;border:1px solid rgba(255,255,255,0.02)}
 
-    .container {
-        width: 95%;
-        max-width: 900px;
-        margin: auto;
-        margin-top: 30px;
-        text-align: center;
-    }
+  .right{width:420px;min-width:300px}
+  .device{padding:14px;border-radius:12px;display:flex;flex-direction:column;gap:12px}
+  .screen{height:260px;border-radius:8px;background:linear-gradient(180deg,#071024,#0a2239);position:relative;overflow:hidden;display:grid;place-items:center}
+  .fps{position:absolute;right:12px;bottom:10px;color:var(--muted);font-size:13px}
+  .mini{font-size:13px;color:var(--muted)}
 
-    .btn-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 18px;
-        margin-top: 35px;
-    }
+  .files{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+  .file-row{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px}
 
-    button {
-        padding: 16px;
-        font-size: 1rem;
-        font-weight: 600;
-        border-radius: 10px;
-        border: none;
-        cursor: pointer;
-        background: #00b8ff;
-        color: #000;
-        transition: 0.3s;
-    }
+  .modal-back{position:fixed;inset:0;background:rgba(0,0,0,0.65);display:none;align-items:center;justify-content:center;z-index:50}
+  .modal{width:720px;max-width:94%;background:#071525;padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)}
+  pre.cmd{background:#071424;padding:12px;border-radius:8px;color:#bfe8ff;overflow:auto;font-size:13px}
 
-    button:hover {
-        background: #008ac0;
-        transform: translateY(-3px);
-    }
+  .small{font-size:13px;color:var(--muted)}
 
-    .panel {
-        margin-top: 40px;
-        padding: 25px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 15px;
-        backdrop-filter: blur(6px);
-        min-height: 180px;
-        animation: fadeUp 1.2s ease-out both;
-    }
-
-    #status {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #00d2ff;
-    }
-
-    #log {
-        margin-top: 15px;
-        font-size: 0.95rem;
-        opacity: 0.75;
-        white-space: pre-line;
-        text-align: left;
-    }
-
-    /* Modal (Settings popup) */
-    .modal-bg {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0,0,0,0.7);
-        display: none;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .modal {
-        background: #111;
-        padding: 25px;
-        width: 90%;
-        max-width: 420px;
-        border-radius: 12px;
-        border: 1px solid #00d2ff55;
-        animation: popIn 0.4s ease-out both;
-    }
-
-    .modal h2 {
-        margin-top: 0;
-        color: #00d2ff;
-        text-align: center;
-    }
-
-    .close-btn {
-        margin-top: 15px;
-        background: #ff4444;
-        color: #fff;
-    }
-
-    .close-btn:hover {
-        background: #b32d2d;
-    }
-
-    @keyframes fadeDown {
-        from { opacity: 0; transform: translateY(-15px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeUp {
-        from { opacity: 0; transform: translateY(15px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes popIn {
-        from { opacity: 0; transform: scale(0.8); }
-        to { opacity: 1; transform: scale(1); }
-    }
+  @media (max-width:980px){.hero{flex-direction:column}.right{width:100%}}
 </style>
-
 </head>
-
 <body>
+<div class="wrap">
+  <header>
+    <div class="logo" aria-hidden="true">
+      <!-- icon -->
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M12 2v8" stroke="white" stroke-width="1.6" stroke-linecap="round"/><path d="M6 12c0 3.3 2.7 6 6 6s6-2.7 6-6" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </div>
+    <div>
+      <h1>Gesture PC Control — Launcher</h1>
+      <p class="lead">Local control panel — connect to the Python backend (Flask). Buttons are live and safe.</p>
+    </div>
+  </header>
 
-<div class="header">
-    <h1>Gesture Control System</h1>
-    <p>Ultra-lightweight | Aesthetic | Smooth Performance</p>
-</div>
+  <div class="hero" role="main">
+    <div class="left card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="small">Local server</div>
+          <div id="serverUrl" class="small">http://127.0.0.1:5000</div>
+        </div>
+        <div>
+          <button id="statusPollBtn" class="btn small ghost">Poll Status</button>
+        </div>
+      </div>
 
-<div class="container">
+      <div class="panel" style="margin-top:12px">
+        <div id="statusRow">
+          <div id="statusPill" class="status-pill idle">Idle</div>
+          <div class="small">Last updated: <span id="lastUpdated">—</span></div>
+        </div>
 
-    <div class="btn-grid">
-        <button onclick="startSystem()">Start System</button>
-        <button onclick="stopSystem()">Stop System</button>
-        <button onclick="recalibrate()">Recalibrate Gestures</button>
-        <button onclick="openSettings()">Open Settings</button>
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+          <button id="startBtn" class="btn">Start</button>
+          <button id="stopBtn" class="btn ghost">Stop</button>
+          <button id="recalBtn" class="btn warn">Recalibrate</button>
+          <button id="settingsBtn" class="btn ghost">Settings</button>
+        </div>
+
+        <div id="log" aria-live="polite"></div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <button id="openRepo" class="btn ghost">Open Repository</button>
+        <button id="downloadZip" class="btn ghost">Open Repo Search</button>
+        <div style="flex:1" class="small">If the buttons show errors, please ensure the Python server (`server.py`) is running on <strong>127.0.0.1:5000</strong> and CORS is enabled (Flask-CORS).</div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>Quick Commands</strong></div>
+          <div class="small">Copy to terminal</div>
+        </div>
+        <pre class="cmd" id="cmdBlock">python -m venv venv
+# Windows:
+venv\Scripts\activate
+# macOS / Linux:
+source venv/bin/activate
+pip install flask flask-cors pyautogui mediapipe opencv-python numpy
+python server.py</pre>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button id="copyCmd" class="btn small">Copy Commands</button>
+          <button id="showDocs" class="btn small ghost">Docs</button>
+        </div>
+      </div>
     </div>
 
-    <div class="panel">
-        <div id="status">System Status: Idle</div>
-        <div id="log"></div>
+    <aside class="right card device">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>Live Preview (simulated)</strong></div>
+        <div class="mini">Local • Simulated</div>
+      </div>
+      <div class="screen" id="screen">
+        <div id="mock" style="width:100%;height:100%;position:relative"></div>
+        <div class="fps">FPS: <span id="fpsSim">25</span></div>
+      </div>
+
+      <div class="card small" style="padding:10px;margin-top:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="small">Files</div>
+          <div class="small">Status: <span id="backendStatus" style="color:var(--muted)">unknown</span></div>
+        </div>
+        <div class="files" style="margin-top:8px">
+          <div class="file-row"><div class="name">main.py</div><div class="small">entry</div></div>
+          <div class="file-row"><div class="name">server.py</div><div class="small">api</div></div>
+          <div class="file-row"><div class="name">system_control.py</div><div class="small">controller</div></div>
+          <div class="file-row"><div class="name">overlay_renderer.py</div><div class="small">hud</div></div>
+          <div class="file-row"><div class="name">gesture_recognizer.py</div><div class="small">logic</div></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="modal-back" id="modal" role="dialog" aria-hidden="true">
+    <div class="modal" role="document" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">Settings & Notes</h3>
+      <p class="small">• Ensure Flask server (server.py) is running on 127.0.0.1:5000.<br>• If browser reports CORS errors: install and enable <code>flask-cors</code> in server (`pip install flask-cors` and add <code>CORS(app)</code> in server.py).</p>
+      <pre class="cmd"># Minimal server start
+python -m venv venv
+# activate
+pip install -r requirements.txt
+python server.py</pre>
+      <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+        <button id="modalClose" class="btn small ghost">Close</button>
+      </div>
     </div>
+  </div>
 </div>
-
-<!-- Modal -->
-<div class="modal-bg" id="modalBg">
-    <div class="modal">
-        <h2>Settings</h2>
-        <p>• Gesture sensitivity  
-        • Tracking stability  
-        • UI animation controls  
-        • More coming soon...</p>
-
-        <button class="close-btn" onclick="closeSettings()">Close</button>
-    </div>
-</div>
-
 
 <script>
-    const statusEl = document.getElementById("status");
-    const logEl = document.getElementById("log");
-    const modalBg = document.getElementById("modalBg");
+/* ---------- Configuration ---------- */
+const API_BASE = "http://127.0.0.1:5000";        // server URL
+const TIMEOUT_MS = 4000;                       // request timeout
 
-    function updateLog(message) {
-        logEl.textContent += "• " + message + "\n";
-    }
+/* ---------- Elements ---------- */
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const recalBtn = document.getElementById('recalBtn');
+const settingsBtn = document.getElementById('settingsBtn');
+const logEl = document.getElementById('log');
+const statusPill = document.getElementById('statusPill');
+const lastUpdatedEl = document.getElementById('lastUpdated');
+const modal = document.getElementById('modal');
+const modalClose = document.getElementById('modalClose');
+const copyCmd = document.getElementById('copyCmd');
+const openRepo = document.getElementById('openRepo');
+const downloadZip = document.getElementById('downloadZip');
+const statusPollBtn = document.getElementById('statusPollBtn');
+const backendStatus = document.getElementById('backendStatus');
 
-    async function callAPI(endpoint) {
-        const res = await fetch(`http://127.0.0.1:5000/${endpoint}`, { method: "POST" });
-        return res.json();
-    }
+/* ---------- Helpers ---------- */
+function ts(){ return new Date().toLocaleTimeString(); }
+function appendLog(msg, type='info'){
+  const time = ts();
+  const line = `[${time}] ${msg}`;
+  logEl.textContent += line + "\n";
+  logEl.scrollTop = logEl.scrollHeight;
+  // update last updated small
+  lastUpdatedEl.textContent = time;
+  if(type === 'error') logEl.style.color = '#ffd6d6';
+}
 
-    async function startSystem() {
-        const data = await callAPI("start");
-        statusEl.textContent = "System Status: " + data.status;
-        updateLog(data.message);
+/* fetch with timeout + robust error handling */
+async function fetchWithTimeout(url, opts={}, timeout=TIMEOUT_MS){
+  const controller = new AbortController();
+  const id = setTimeout(()=>controller.abort(), timeout);
+  try{
+    const res = await fetch(url, {...opts, signal: controller.signal});
+    clearTimeout(id);
+    if(!res.ok){
+      const body = await res.text().catch(()=>res.statusText);
+      throw new Error(`HTTP ${res.status}: ${body}`);
     }
+    const json = await res.json().catch(()=>null);
+    return {ok:true, json};
+  }catch(err){
+    clearTimeout(id);
+    return {ok:false, error:err};
+  }
+}
 
-    async function stopSystem() {
-        const data = await callAPI("stop");
-        statusEl.textContent = "System Status: " + data.status;
-        updateLog(data.message);
-    }
+/* Update status pill styles */
+function setStatus(state){
+  statusPill.classList.remove('idle','running','stopped');
+  if(state === 'running'){
+    statusPill.classList.add('running'); statusPill.textContent='Running';
+  } else if(state === 'stopped'){
+    statusPill.classList.add('stopped'); statusPill.textContent='Stopped';
+  } else {
+    statusPill.classList.add('idle'); statusPill.textContent='Idle';
+  }
+}
 
-    async function recalibrate() {
-        const data = await callAPI("recalibrate");
-        updateLog(data.message);
-    }
+/* ---------- API actions ---------- */
+async function callAction(path, method='POST'){
+  appendLog(`Calling ${path}...`);
+  const url = API_BASE + path;
+  const res = await fetchWithTimeout(url, {method});
+  if(!res.ok){
+    appendLog(`ERROR: ${res.error.message || res.error}`, 'error');
+    backendStatus.textContent = 'down';
+    return null;
+  }
+  backendStatus.textContent = 'up';
+  appendLog(`Response: ${JSON.stringify(res.json)}`);
+  return res.json;
+}
 
-    function openSettings() {
-        modalBg.style.display = "flex";
-    }
+startBtn.addEventListener('click', async ()=>{
+  startBtn.disabled = true;
+  const r = await callAction('/start','POST');
+  if(r) setStatus(r.status || 'running');
+  startBtn.disabled = false;
+});
 
-    function closeSettings() {
-        modalBg.style.display = "none";
+stopBtn.addEventListener('click', async ()=>{
+  stopBtn.disabled = true;
+  const r = await callAction('/stop','POST');
+  if(r) setStatus(r.status || 'stopped');
+  stopBtn.disabled = false;
+});
+
+recalBtn.addEventListener('click', async ()=>{
+  recalBtn.disabled = true;
+  const r = await callAction('/recalibrate','POST');
+  if(r) appendLog(r.message || 'Recalibrated');
+  recalBtn.disabled = false;
+});
+
+settingsBtn.addEventListener('click', ()=>{
+  modal.style.display = 'flex';
+  modal.setAttribute('aria-hidden','false');
+});
+modalClose.addEventListener('click', ()=>{
+  modal.style.display = 'none';
+  modal.setAttribute('aria-hidden','true');
+});
+
+copyCmd.addEventListener('click', async ()=>{
+  const txt = document.getElementById('cmdBlock').innerText;
+  try{
+    await navigator.clipboard.writeText(txt);
+    appendLog('Commands copied to clipboard.');
+  }catch(e){
+    appendLog('Clipboard copy failed. Select and copy manually.', 'error');
+  }
+});
+
+openRepo.addEventListener('click', ()=>{
+  window.open('https://github.com/search?q=gesture_pc_control&type=repositories','_blank');
+});
+downloadZip.addEventListener('click', ()=>{
+  window.open('https://github.com/search?q=gesture_pc_control&type=repositories','_blank');
+});
+
+statusPollBtn.addEventListener('click', async ()=>{
+  statusPollBtn.disabled = true;
+  appendLog('Polling status...');
+  const res = await fetchWithTimeout(API_BASE + '/status', {method:'GET'});
+  if(!res.ok){
+    appendLog('Could not reach server. Make sure server.py is running and CORS enabled.', 'error');
+    backendStatus.textContent = 'down';
+  } else {
+    const json = res.json;
+    appendLog(`Status: ${JSON.stringify(json)}`);
+    setStatus(json.status || 'idle');
+    backendStatus.textContent = 'up';
+  }
+  statusPollBtn.disabled = false;
+});
+
+/* Auto poll backend every 8s for status (graceful) */
+let pollTimer = setInterval(async ()=>{
+  const res = await fetchWithTimeout(API_BASE + '/status', {method:'GET'}, 2500);
+  if(res.ok && res.json){
+    setStatus(res.json.status || 'idle');
+    backendStatus.textContent = 'up';
+  } else {
+    backendStatus.textContent = 'down';
+  }
+}, 8000);
+
+/* Simulated animated mock inside preview */
+(function mockAnim(){
+  const root = document.getElementById('mock');
+  const w = 360, h = 200;
+  const pts = [];
+  for(let i=0;i<5;i++){
+    const el = document.createElement('div');
+    el.style.position='absolute';
+    el.style.width='10px'; el.style.height='10px'; el.style.borderRadius='50%';
+    el.style.background='linear-gradient(90deg,var(--accent),#4fa8ff)';
+    el.style.boxShadow='0 6px 16px rgba(79,144,255,0.12)';
+    root.appendChild(el);
+    pts.push({el, x: 20 + i*18, y: 60 + (i%2? -10:10), r:8});
+  }
+  function tick(t){
+    const s = t/1000;
+    for(let i=0;i<pts.length;i++){
+      const p = pts[i];
+      const vx = Math.sin(s*1.2 + i)*6;
+      const vy = Math.cos(s*1.05 + i*0.6)*4;
+      p.el.style.left = (p.x + vx) + 'px';
+      p.el.style.top = (p.y + vy) + 'px';
     }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+
+/* init UI */
+appendLog('Launcher ready. Click Start to activate the local gesture system.');
+setStatus('idle');
 </script>
-
-
 </body>
 </html>
