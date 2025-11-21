@@ -191,19 +191,26 @@
         logEl.textContent += "• " + message + "\n";
     }
 
-    function startSystem() {
-        statusEl.textContent = "System Status: Running…";
-        updateLog("Gesture recognition started.");
+    async function callAPI(endpoint) {
+        const res = await fetch(`http://127.0.0.1:5000/${endpoint}`, { method: "POST" });
+        return res.json();
     }
 
-    function stopSystem() {
-        statusEl.textContent = "System Status: Stopped";
-        updateLog("Gesture recognition stopped.");
+    async function startSystem() {
+        const data = await callAPI("start");
+        statusEl.textContent = "System Status: " + data.status;
+        updateLog(data.message);
     }
 
-    function recalibrate() {
-        updateLog("Recalibrating… Hold still.");
-        setTimeout(() => updateLog("Recalibration complete."), 1500);
+    async function stopSystem() {
+        const data = await callAPI("stop");
+        statusEl.textContent = "System Status: " + data.status;
+        updateLog(data.message);
+    }
+
+    async function recalibrate() {
+        const data = await callAPI("recalibrate");
+        updateLog(data.message);
     }
 
     function openSettings() {
@@ -214,6 +221,7 @@
         modalBg.style.display = "none";
     }
 </script>
+
 
 </body>
 </html>
